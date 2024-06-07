@@ -18,6 +18,7 @@ public class LatControl extends Group {
     ArrayList<Character> separators = new ArrayList<Character>();
     ArrayList<Float> values = new ArrayList<Float>();
     TextField latitudeField = null;
+    // флаг, который отображает наличие изменений значений поля
     boolean changeFlag = false;
 
     public LatControl(){
@@ -39,6 +40,7 @@ public class LatControl extends Group {
         // форматер текста
         TextFormatter textFormatter = new TextFormatter<>(c-> {
             if (c.isContentChange()) {
+
                 //позволяет вводить только числа и точку
                 if (c.getText().matches("[0-9]") || c.getText().matches("\\.") || c.getText().matches("-")) {
                     String selectedString = latitudeField.getSelectedText();
@@ -47,6 +49,7 @@ public class LatControl extends Group {
                             return null;
                         }
                     }
+
                     // запрет ввода более друх точек
                     if (c.getText().matches("\\.")){
                         String currentValue = getValuesWhereCaretIs(separators);
@@ -54,6 +57,8 @@ public class LatControl extends Group {
                             return null;
                         }
                     }
+
+                    //проверка на то, чтобы знак минуса добавлялся лишь в начале значения
                     if (c.getText().matches("-")){
                         int carPos = latitudeField.getCaretPosition();
                         if (carPos == 0) return c;
@@ -61,11 +66,14 @@ public class LatControl extends Group {
                         if (latitudeField.getSelectedText().length()>0) return c;
                         return null;
                     }
+
                     changeFlag = true;
                     return c;
                 }
+
                 if (c.isDeleted()) {
                     char deletedChar = latitudeField.getCharacters().charAt(c.getCaretPosition());
+                    //запрет удаления значений, являющихся сепаратором
                     if (separators.contains(deletedChar)){
                         return null;
                     }
@@ -83,8 +91,10 @@ public class LatControl extends Group {
                     changeFlag = true;
                     return c;
                 }
+
                 return null;
             }
+
             return c;
         });
 

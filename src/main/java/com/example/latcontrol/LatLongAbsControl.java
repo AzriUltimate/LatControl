@@ -1,5 +1,12 @@
 package com.example.latcontrol;
 
+import javafx.beans.Observable;
+import javafx.beans.property.ListProperty;
+import javafx.beans.property.SimpleListProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.control.TextField;
@@ -13,9 +20,8 @@ import javafx.scene.text.FontWeight;
 
 import java.util.ArrayList;
 
-import static java.lang.Math.abs;
-
 public abstract class LatLongAbsControl extends Group {
+    private SimpleListProperty<Float> valueForUser;
     private StringBuilder stringBuilder = new StringBuilder();
     private ArrayList<Character> separators = new ArrayList<Character>();
     private ArrayList<Float> values = new ArrayList<Float>();
@@ -35,6 +41,8 @@ public abstract class LatLongAbsControl extends Group {
         inputField.setStyle("-fx-text-fill: black; -fx-border-color: black");
         inputField.setMinSize(40, 20);
         inputField.setFont(Font.font("Times New Roman", FontWeight.NORMAL, 30));
+
+        valueForUser = new SimpleListProperty<Float>(this, "valueForUser", FXCollections.observableArrayList(values));
 
         GridPane pane = new GridPane();
         pane.add(inputField, 0,0);
@@ -119,10 +127,12 @@ public abstract class LatLongAbsControl extends Group {
                         inputField.positionCaret(inputField.getLength()-1);
                     }
                     updateTextfield();
+                    updateValuesForUser();
                     selectNextWord(currentPosition);
                 }
                 if (keyEvent.getCode() == KeyCode.LEFT){
                     updateTextfield();
+                    updateValuesForUser();
                     selectPreviousWord(currentPosition);
                 }
                 if (inputField.getSelectedText().length()>0){
@@ -142,22 +152,49 @@ public abstract class LatLongAbsControl extends Group {
                 }
                 currentPosition = getValuePosition();
                 updateTextfield();
+                updateValuesForUser();
                 selectValueOnPosition(currentPosition);
+            }
+        });
+
+        // логика, связанная с потерей фокуса на объекте
+        inputField.focusedProperty().addListener(new ChangeListener<Boolean>(){
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                if (!newValue && oldValue){
+                    updateValues();
+                    if (validateValues()){
+                        updateTextfield();
+                        updateValuesForUser();
+                        inputField.setStyle("-fx-text-fill: black; -fx-border-color: black");
+                    }
+                    else{
+                        values = new ArrayList<Float>(valueForUser.get());
+                        inputField.setText(longitudeValueBuilder());
+                        inputField.setStyle("-fx-text-fill: black; -fx-border-color: black");
+                    }
+                }
             }
         });
 
         inputField.setTextFormatter(textFormatter);
     }
 
-    public Float getDegrees() {
-        return values.get(0);
+    public ObservableList<Float> getValueForUser(){
+        return valueForUser.get();
     }
-    public Float getMinutes() {
-        return values.get(1);
+
+    public void setValueForUser(ObservableList<Float> valueForUser){
+        this.valueForUser.set(valueForUser);
     }
-    public Float getSeconds() {
-        return values.get(2);
+
+    public SimpleListProperty<Float> valueForUserProperty(){
+        return this.valueForUser;
     }
+
+    public Float getDegrees() {return values.get(0);}
+    public Float getMinutes() {return values.get(1);}
+    public Float getSeconds() {return values.get(2);}
 
     public abstract String getOutput();
 
@@ -235,6 +272,12 @@ public abstract class LatLongAbsControl extends Group {
             else inputField.setStyle("-fx-text-fill: red; -fx-border-color: red");
             inputField.setText(longitudeValueBuilder());
             changeFlag = false;
+        }
+    }
+
+    private void updateValuesForUser(){
+        if (validateValues()){
+            valueForUser.set(FXCollections.observableArrayList(values));
         }
     }
 

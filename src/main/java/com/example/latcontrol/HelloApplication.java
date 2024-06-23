@@ -1,6 +1,13 @@
 package com.example.latcontrol;
 
 import javafx.application.Application;
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
+import javafx.beans.property.SimpleListProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
@@ -14,28 +21,30 @@ import java.io.IOException;
 public class HelloApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
-        LongitudeControl longitudeField = new LongitudeControl();
         LatitudeControl latitudeField = new LatitudeControl();
+        LongitudeControl longitudeField = new LongitudeControl();
         Button addButton = new Button("Добавить");
         Label latitudeLabel = new Label("Широта");
         Label longitudeLabel = new Label("Долгота");
+        Label currentLatitudeValues = new Label();
+        Label currentLongitudeValues = new Label();
         VBox pane = new VBox();
-        addButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                System.out.println(latitudeField.getOutput());
-                System.out.println(longitudeField.getOutput());
-            }
-        });
+
+        currentLatitudeValues.textProperty().bind(latitudeField.valueForUserProperty().asString());
+        currentLongitudeValues.textProperty().bind(longitudeField.valueForUserProperty().asString());
 
         pane.getChildren().add(0, latitudeLabel);
         pane.getChildren().add(1, latitudeField);
         pane.getChildren().add(2, longitudeLabel);
         pane.getChildren().add(3, longitudeField);
         pane.getChildren().add(4, addButton);
+        pane.getChildren().add(5, currentLatitudeValues);
+        pane.getChildren().add(6, currentLongitudeValues);
 
         Scene scene = new Scene(pane, 500, 300);
         stage.setScene(scene);
+        pane.requestFocus();
         stage.show();
     }
+
 }

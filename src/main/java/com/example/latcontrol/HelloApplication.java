@@ -1,15 +1,6 @@
 package com.example.latcontrol;
 
 import javafx.application.Application;
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
-import javafx.beans.property.SimpleListProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -30,9 +21,10 @@ public class HelloApplication extends Application {
         Label currentLongitudeValues = new Label();
         VBox pane = new VBox();
 
-        currentLatitudeValues.textProperty().bind(latitudeField.valueForUserProperty().asString());
-        currentLongitudeValues.textProperty().bind(longitudeField.valueForUserProperty().asString());
+        currentLatitudeValues.textProperty().bind(latitudeField.getValueForUser().asString());
+        currentLongitudeValues.textProperty().bind(longitudeField.getValueForUser().asString());
 
+        //TODO: Переделать в цикл for по массиву данных
         pane.getChildren().add(0, latitudeLabel);
         pane.getChildren().add(1, latitudeField);
         pane.getChildren().add(2, longitudeLabel);

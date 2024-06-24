@@ -1,12 +1,9 @@
 package com.example.latcontrol;
 
-import javafx.beans.Observable;
-import javafx.beans.property.ListProperty;
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.control.TextField;
@@ -14,40 +11,57 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.GridPane;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public abstract class LatLongAbsControl extends Group {
     private SimpleListProperty<Float> valueForUser;
     private StringBuilder stringBuilder = new StringBuilder();
-    private ArrayList<Character> separators = new ArrayList<Character>();
-    private ArrayList<Float> values = new ArrayList<Float>();
+    private ArrayList<Character> separators = new ArrayList<>(Arrays.asList('°', '\'', '\"'));
+    private ArrayList<Float> values = new ArrayList<Float>(Arrays.asList(0f, 0f, 0f));
     private TextField inputField;
     // флаг, который отображает наличие изменений значений поля
     private boolean changeFlag = false;
     private int currentPosition = 0;
 
     public LatLongAbsControl(){
-        separators.add('°');
-        separators.add('\'');
-        separators.add('\"');
-        values.add(0f);
-        values.add(0f);
-        values.add(0f);
         inputField = new TextField(longitudeValueBuilder());
+        //TODO: вынести косметическую часть на второй конструктор ()
         inputField.setStyle("-fx-text-fill: black; -fx-border-color: black");
         inputField.setMinSize(40, 20);
         inputField.setFont(Font.font("Times New Roman", FontWeight.NORMAL, 30));
 
         valueForUser = new SimpleListProperty<Float>(this, "valueForUser", FXCollections.observableArrayList(values));
 
-        GridPane pane = new GridPane();
-        pane.add(inputField, 0,0);
-        this.getChildren().add(pane);
+        this.getChildren().add(inputField);
 
+        // установка textformatter'а для необходимой обработки ввода в поле
+        inputField.setTextFormatter(getTextFormatter());
+
+        // обработка управления выделением по нажатии на стрелочки
+        inputField.setOnKeyPressed(getEventHandlerForKeyPressed());
+
+        // выделение нажатием мыши
+        inputField.setOnMouseClicked(getEventHandlerForMouseClicked());
+
+        // логика, связанная с потерей фокуса на объекте
+        inputField.focusedProperty().addListener(getChangeListenerForFocusedProperty());
+    }
+
+    public SimpleListProperty<Float> getValueForUser(){
+        return this.valueForUser;
+    }
+
+    private void setValuesForUser(){
+        if (validateValues()){
+            valueForUser.set(FXCollections.observableArrayList(values));
+        }
+    }
+
+    private TextFormatter<Object> getTextFormatter(){
         TextFormatter<Object> textFormatter = new TextFormatter<>(c-> {
             if (c.isContentChange()){
                 String inputChars = c.getText();
@@ -118,54 +132,18 @@ public abstract class LatLongAbsControl extends Group {
             }
             return c;
         });
+        return textFormatter;
+    }
 
-        inputField.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent keyEvent) {
-                if (keyEvent.getCode() == KeyCode.RIGHT){
-                    if (inputField.getCaretPosition() == inputField.getLength()){
-                        inputField.positionCaret(inputField.getLength()-1);
-                    }
-                    updateTextfield();
-                    updateValuesForUser();
-                    selectNextWord(currentPosition);
-                }
-                if (keyEvent.getCode() == KeyCode.LEFT){
-                    updateTextfield();
-                    updateValuesForUser();
-                    selectPreviousWord(currentPosition);
-                }
-                if (inputField.getSelectedText().length()>0){
-                    if (separators.contains(inputField.getSelectedText().charAt(0))){
-                        inputField.deselect();
-                    }
-                }
-            }
-        });
-
-        // выделение нажатием мыши
-        inputField.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent mouseEvent) {
-                if (inputField.getCaretPosition() == inputField.getLength()){
-                    inputField.positionCaret(inputField.getLength()-1);
-                }
-                currentPosition = getValuePosition();
-                updateTextfield();
-                updateValuesForUser();
-                selectValueOnPosition(currentPosition);
-            }
-        });
-
-        // логика, связанная с потерей фокуса на объекте
-        inputField.focusedProperty().addListener(new ChangeListener<Boolean>(){
+    private ChangeListener<Boolean> getChangeListenerForFocusedProperty(){
+        return new ChangeListener<Boolean>(){
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
                 if (!newValue && oldValue){
                     updateValues();
                     if (validateValues()){
                         updateTextfield();
-                        updateValuesForUser();
+                        setValuesForUser();
                         inputField.setStyle("-fx-text-fill: black; -fx-border-color: black");
                     }
                     else{
@@ -175,21 +153,48 @@ public abstract class LatLongAbsControl extends Group {
                     }
                 }
             }
-        });
-
-        inputField.setTextFormatter(textFormatter);
+        };
     }
 
-    public ObservableList<Float> getValueForUser(){
-        return valueForUser.get();
+    private EventHandler<MouseEvent> getEventHandlerForMouseClicked(){
+        return new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                if (inputField.getCaretPosition() == inputField.getLength()){
+                    inputField.positionCaret(inputField.getLength()-1);
+                }
+                currentPosition = getValuePosition();
+                updateTextfield();
+                setValuesForUser();
+                selectValueOnPosition(currentPosition);
+            }
+        };
     }
 
-    public void setValueForUser(ObservableList<Float> valueForUser){
-        this.valueForUser.set(valueForUser);
-    }
-
-    public SimpleListProperty<Float> valueForUserProperty(){
-        return this.valueForUser;
+    private EventHandler<KeyEvent> getEventHandlerForKeyPressed(){
+        return new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent keyEvent) {
+                if (keyEvent.getCode() == KeyCode.RIGHT){
+                    if (inputField.getCaretPosition() == inputField.getLength()){
+                        inputField.positionCaret(inputField.getLength()-1);
+                    }
+                    updateTextfield();
+                    setValuesForUser();
+                    selectNextWord(currentPosition);
+                }
+                if (keyEvent.getCode() == KeyCode.LEFT){
+                    updateTextfield();
+                    setValuesForUser();
+                    selectPreviousWord(currentPosition);
+                }
+                if (inputField.getSelectedText().length()>0){
+                    if (separators.contains(inputField.getSelectedText().charAt(0))){
+                        inputField.deselect();
+                    }
+                }
+            }
+        };
     }
 
     public Float getDegrees() {return values.get(0);}
@@ -272,12 +277,6 @@ public abstract class LatLongAbsControl extends Group {
             else inputField.setStyle("-fx-text-fill: red; -fx-border-color: red");
             inputField.setText(longitudeValueBuilder());
             changeFlag = false;
-        }
-    }
-
-    private void updateValuesForUser(){
-        if (validateValues()){
-            valueForUser.set(FXCollections.observableArrayList(values));
         }
     }
 

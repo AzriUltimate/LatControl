@@ -21,8 +21,8 @@ public class HelloApplication extends Application {
         Label currentLongitudeValues = new Label();
         VBox pane = new VBox();
 
-        currentLatitudeValues.textProperty().bind(latitudeField.getValueForUser().asString());
-        currentLongitudeValues.textProperty().bind(longitudeField.getValueForUser().asString());
+        currentLatitudeValues.textProperty().bind(latitudeField.valueForUserProperty().asString());
+        currentLongitudeValues.textProperty().bind(longitudeField.valueForUserProperty().asString());
 
         //TODO: Переделать в цикл for по массиву данных
         pane.getChildren().add(0, latitudeLabel);

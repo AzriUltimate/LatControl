@@ -51,7 +51,7 @@ public abstract class LatLongAbsControl extends Group {
         inputField.focusedProperty().addListener(getChangeListenerForFocusedProperty());
     }
 
-    public SimpleListProperty<Float> getValueForUser(){
+    public SimpleListProperty<Float> valueForUserProperty(){
         return this.valueForUser;
     }
 
